@@ -20,7 +20,7 @@ export default function Dashboard() {
                     </button>
                     <button
                         className="bg-green-600 text-white px-6 py-3 rounded-lg w-full hover:bg-green-700 font-semibold transition duration-200"
-                        onClick={() => router.push("/students")}
+                        onClick={() => router.push("/students")}  // Ensure this is correct
                     >
                         Students
                     </button>
@@ -29,3 +29,4 @@ export default function Dashboard() {
         </div>
     );
 }
+

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import supabase from "../lib/supabase";
 
 export default function Home() {
   const [apiKey, setApiKey] = useState("");
@@ -9,7 +10,17 @@ export default function Home() {
   const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
 
-  const handleLogin = () => {
+  useEffect(() => {
+    // Load saved credentials if 'Keep me signed in' was selected
+    const savedApiKey = localStorage.getItem("smsChefApiKey");
+    const savedDeviceId = localStorage.getItem("smsChefDeviceId");
+    if (savedApiKey && savedDeviceId) {
+      setApiKey(savedApiKey);
+      setDeviceId(savedDeviceId);
+    }
+  }, []);
+
+  const handleLogin = async () => {
     if (!apiKey || !deviceId) {
       alert("Please enter both API Key and Device ID.");
       return;
@@ -20,6 +31,22 @@ export default function Home() {
       localStorage.setItem("smsChefDeviceId", deviceId);
     }
 
+    // Debugging: Log before inserting
+    console.log("Attempting to insert:", { api_key: apiKey, device_id: deviceId });
+
+    // Store credentials in Supabase
+    const { data, error } = await supabase
+      .from("user_credentials")
+      .upsert([{ api_key: apiKey, device_id: deviceId }])
+      .select("*");
+
+    if (error) {
+      console.error("❌ Error storing credentials in Supabase:", error.message);
+      alert(`Failed to save credentials: ${error.message}`);
+      return;
+    }
+
+    console.log("✅ Credentials stored successfully in Supabase:", data);
     router.push("/dashboard");
   };
 
@@ -62,6 +89,5 @@ export default function Home() {
     </div>
   );
 }
-
 
 
