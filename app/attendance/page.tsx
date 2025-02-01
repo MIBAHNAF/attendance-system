@@ -6,23 +6,53 @@ import supabase from "../../lib/supabase";
 interface Student {
   id: string;
   name: string;
+  phone: string;
   status: "" | "Present" | "Absent";
 }
 
 export default function Attendance() {
   const [students, setStudents] = useState<Student[]>([]);
-  const currentDate = new Date().toISOString().split("T")[0]; // Format YYYY-MM-DD
+  const [apiKey, setApiKey] = useState("");
+  const [deviceId, setDeviceId] = useState("");
+  const currentDate = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     const fetchStudents = async () => {
-      const { data, error } = await supabase.from("students").select("id, name");
-      if (error) {
-        console.error("Error fetching students:", error);
+      const { data: studentData, error: studentError } = await supabase.from("students").select("id, name, phone");
+      if (studentError) {
+        console.error("Error fetching students:", studentError.message);
       } else {
-        setStudents(data.map((student) => ({ ...student, status: "" })) || []);
+        setStudents(studentData.map((student) => ({ ...student, status: "" })) || []);
       }
     };
+
+    const fetchCredentials = async () => {
+      const { data, error } = await supabase
+        .from("user_credentials")
+        .select("api_key, device_id")
+        .limit(1) // Ensure only one row is fetched
+        .single(); // Enforce single row
+
+      if (error) {
+        console.error("❌ Error fetching credentials:", error.message);
+        alert("Failed to fetch API credentials. Please log in again.");
+        return;
+      }
+
+      if (!data) {
+        console.warn("⚠ No API credentials found.");
+        alert("No API credentials found. Please log in again.");
+        return;
+      }
+
+      setApiKey(data.api_key);
+      setDeviceId(data.device_id);
+      console.log("✅ Fetched credentials successfully:", data);
+    };
+
+
     fetchStudents();
+    fetchCredentials();
   }, []);
 
   const markAttendance = (id: string, status: "Present" | "Absent") => {
@@ -33,27 +63,81 @@ export default function Attendance() {
     );
   };
 
-  const finalizeAttendance = async () => {
-    const attendanceRecords = students.map(({ id, status }) => ({
-      student_id: id,
-      status,
-      date: currentDate,
-      month: new Date().toLocaleString('default', { month: 'long' }), // Store month name
-    }));
-
-    const { error } = await supabase.from("attendance").insert(attendanceRecords);
-    if (error) {
-      console.error("Error storing attendance:", error);
-      alert("Failed to store attendance.");
-    } else {
-      alert("Attendance stored successfully!");
+  const sendSMS = async (phoneNumber: string, name: string) => {
+    if (!apiKey || !deviceId) {
+        alert("Missing API Key or Device ID. Please log in again.");
+        return;
     }
 
-    // Send SMS notifications to absent students
+    const message = `Student ${name} was absent!`;
+    const payload = new URLSearchParams({
+        secret: apiKey,
+        mode: "devices",
+        campaign: "bulk test",
+        numbers: phoneNumber,
+        device: deviceId,
+        sim: "2",
+        priority: "1",
+        message: message,
+    });
+
+    try {
+        const response = await fetch("https://www.cloud.smschef.com/api/send/sms.bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }, // Fix request headers
+            body: payload.toString(),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("📨 SMS API Response:", result);
+
+        if (result.status === 200) {
+            alert(`✅ SMS sent to ${name}`);
+        } else {
+            alert(`❌ Failed to send SMS: ${result.message || "Unknown error"}`);
+        }
+    } catch (error) {
+        console.error("❌ Error sending SMS:", error);
+        alert("Failed to send SMS. Please check your network and try again.");
+    }
+};
+
+
+
+  const finalizeAttendance = async () => {
+    const attendanceRecords = students
+      .filter(student => student.status)
+      .map(({ id, status }) => ({
+        student_id: id,
+        status,
+        date: currentDate,
+        month: new Date().toLocaleString('default', { month: 'long' }),
+      }));
+
+    if (attendanceRecords.length === 0) {
+      alert("No attendance data to store.");
+      return;
+    }
+
+    console.log("⏳ Storing attendance records:", attendanceRecords);
+
+    const { error } = await supabase.from("attendance").insert(attendanceRecords);
+
+    if (error) {
+      console.error("❌ Error storing attendance:", error.message);
+      alert(`Failed to store attendance: ${error.message}`);
+      return;
+    }
+
+    alert("✅ Attendance stored successfully!");
+
     students.forEach((student) => {
       if (student.status === "Absent") {
-        console.log(`Sending SMS to ${student.name}: 'Student ${student.name} was absent on ${currentDate}.'`);
-        // Integrate SMS API here
+        sendSMS(student.phone, student.name);
       }
     });
   };
@@ -107,4 +191,3 @@ export default function Attendance() {
     </div>
   );
 }
-

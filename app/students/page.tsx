@@ -67,6 +67,16 @@ export default function Students() {
         setEditingStudent(null);
     };
 
+    const deleteStudent = async (id: string) => {
+        const { error } = await supabase.from("students").delete().eq("id", id);
+        if (error) {
+            console.error("Error deleting student:", error);
+            alert("Failed to delete student.");
+            return;
+        }
+        setStudents((prev) => prev.filter((student) => student.id !== id));
+    };
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-200 p-6">
             <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg">
@@ -110,12 +120,18 @@ export default function Students() {
                                 <tr key={student.id} className="text-center">
                                     <td className="border border-gray-300 px-4 py-2">{student.name}</td>
                                     <td className="border border-gray-300 px-4 py-2">{student.phone}</td>
-                                    <td className="border border-gray-300 px-4 py-2">
+                                    <td className="border border-gray-300 px-4 py-2 flex justify-center gap-2">
                                         <button
                                             className="bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 transition duration-200"
                                             onClick={() => setEditingStudent(student)}
                                         >
                                             Edit
+                                        </button>
+                                        <button
+                                            className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition duration-200"
+                                            onClick={() => deleteStudent(student.id)}
+                                        >
+                                            Delete
                                         </button>
                                     </td>
                                 </tr>
