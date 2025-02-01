@@ -76,7 +76,7 @@ export default function Attendance() {
         campaign: "bulk test",
         numbers: phoneNumber,
         device: deviceId,
-        sim: "2",
+        sim: "1",
         priority: "1",
         message: message,
     });
