@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import supabase from "../../lib/supabase";
+import { useState, useEffect } from "react"; // ✅ Removed unused 'supabase'
 
 export default function Dashboard() {
     const router = useRouter();
@@ -68,3 +67,4 @@ export default function Dashboard() {
         </div>
     );
 }
+
