@@ -1,6 +1,6 @@
 import "./globals.css"; // Correct relative path
 import { Inter, Roboto_Mono } from "next/font/google"; // Import fonts
-import { Analytics } from "@vercel/analytics/react"
+
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const robotoMono = Roboto_Mono({ subsets: ["latin"], variable: "--font-roboto-mono" });
