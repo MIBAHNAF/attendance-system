@@ -53,7 +53,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-200 p-6">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md text-center">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Welcome to Sharmuta Wrap System</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-800">Welcome to Attendance System</h1>
         <div className="space-y-6">
           <input
             type="text"
